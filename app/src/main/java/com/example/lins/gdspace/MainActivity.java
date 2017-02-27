@@ -32,7 +32,10 @@ import com.amap.api.maps2d.model.MarkerOptions;
 import com.amap.api.maps2d.model.MyLocationStyle;
 import com.amap.api.maps2d.model.Text;
 import com.amap.api.maps2d.model.TextOptions;
+import com.example.lins.gdspace.base.App;
+import com.example.lins.gdspace.bean.MainBean;
 import com.example.lins.gdspace.databinding.ActivityMainBinding;
+import com.example.lins.gdspace.service.MySubscribe;
 
 import java.util.ArrayList;
 
@@ -56,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
     public AMapLocationClientOption mLocationOption = null;
     private static final int STROKE_COLOR = Color.argb(180, 3, 145, 255);
     private static final int FILL_COLOR = Color.argb(10, 0, 0, 180);
-
+    boolean chek = false;
     //添加Marker
     private MarkerOptions markerOption;
     private LatLng latlng = new LatLng(39.761, 116.434);
@@ -77,7 +80,8 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
         if (aMap == null) {
             aMap = binding.mapGd.getMap();
             setUpMap();
-            addMarker();// 往地图上添加marker
+            //addMarker();// 往地图上添加marker
+            setMarker();
         }
 
         aMap.setLocationSource(this);// 设置定位监听
@@ -88,11 +92,11 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
         binding.button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                addMarker();
+                //addMarker();
                 //addMarkersToMap();
+                setMarker();
             }
         });
-
     }
 
 //    /**
@@ -109,45 +113,47 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
 //        marker.showInfoWindow();
 //    }
 
+    private void setMarker(){
+        App.getService().getShow(new MySubscribe<MainBean>() {
+            @Override
+            public void onNext(MainBean mainBean) {
+                super.onNext(mainBean);
+
+                addDataMarker(mainBean);
+            }
+        });
+    }
     /**
      * 在地图上添加marker
      */
     private void addMarker() {
-        //文字显示标注，可以设置显示内容，位置，字体大小颜色，背景色旋转角度,Z值等
-        TextOptions textOptions = new TextOptions().position(BEIJING)
-                .text("Text").fontColor(Color.BLACK)
-                .backgroundColor(Color.WHITE).fontSize(30).rotate(20).align(Text.ALIGN_CENTER_HORIZONTAL, Text.ALIGN_CENTER_VERTICAL)
-                .zIndex(1.f).typeface(Typeface.DEFAULT_BOLD);
-        aMap.addText(textOptions);
-
         aMap.addMarker(new MarkerOptions().anchor(0.5f, 0.5f)
                 .position(CHENGDU).title("成都市")
                 .snippet("成都市:30.679879, 104.064855").draggable(true));
 
-        markerOption = new MarkerOptions();
-        markerOption.position(XIAN);
-        markerOption.title("西安市").snippet("西安市：34.341568, 108.940174");
-        markerOption.draggable(true);
-        markerOption.icon(BitmapDescriptorFactory
-                .fromResource(R.drawable.here));
-        marker2 = aMap.addMarker(markerOption);
-        marker2.showInfoWindow();
-        // marker旋转90度
-        marker2.setRotateAngle(90);
+//        markerOption = new MarkerOptions();
+//        markerOption.position(XIAN);
+//        markerOption.title("西安市").snippet("西安市：34.341568, 108.940174");
+//        markerOption.draggable(true);
+//        markerOption.icon(BitmapDescriptorFactory
+//                .fromResource(R.drawable.here));
+//        marker2 = aMap.addMarker(markerOption);
+//        marker2.showInfoWindow();
+        //drawMarkers();// 添加10个带有系统默认icon的marker
+    }
+    private void addDataMarker(MainBean data){
+        for (int i = 0;i<data.getBody().getDatalist().size();i++){
+        Toast.makeText(MainActivity.this, "get:"+data.getBody().getDatalist().get(i).getLat(), Toast.LENGTH_SHORT).show();
+            double dlon = Double.valueOf(data.getBody().getDatalist().get(i).getLon());
+            double dlat = Double.valueOf(data.getBody().getDatalist().get(i).getLat());
+            Marker marker =aMap.addMarker(new MarkerOptions().anchor(0.5f,0.5f)
+            .position(new LatLng(dlon,dlat))
+                    .title(data.getBody().getDatalist().get(i).getTitle())
+                    .snippet(data.getBody().getDatalist().get(i).getWorld())
+                    .draggable(true));
+            marker.showInfoWindow();
+        }
 
-        // 动画效果
-        ArrayList<BitmapDescriptor> giflist = new ArrayList<BitmapDescriptor>();
-        giflist.add(BitmapDescriptorFactory
-                .defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
-        giflist.add(BitmapDescriptorFactory
-                .defaultMarker(BitmapDescriptorFactory.HUE_RED));
-        giflist.add(BitmapDescriptorFactory
-                .defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
-        aMap.addMarker(new MarkerOptions().anchor(0.5f, 0.5f)
-                .position(ZHENGZHOU).title("郑州市").icons(giflist)
-                .draggable(true).period(10));
-
-        drawMarkers();// 添加10个带有系统默认icon的marker
     }
 
     private void setUpMap() {
@@ -156,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
         aMap.setOnMarkerClickListener(this);// 设置点击marker事件监听器
         aMap.setOnInfoWindowClickListener(this);// 设置点击infoWindow事件监听器
         aMap.setInfoWindowAdapter(this);// 设置自定义InfoWindow样式
-        addMarker();// 往地图上添加marker
+        //addMarker();// 往地图上添加marker
     }
 
     /**
@@ -170,6 +176,79 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
                 .title("测试")
                 .draggable(true));
         marker.showInfoWindow();// 设置默认显示一个infowinfow
+    }
+
+
+    @Override
+    public View getInfoWindow(Marker marker) {
+        return null;
+    }
+    /**
+     * 监听自定义infowindow窗口的infocontents事件回调
+     */
+    @Override
+    public View getInfoContents(Marker marker) {
+        return null;
+    }
+
+    /**
+     * 监听点击infowindow窗口事件回调
+     */
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+
+        if (!chek){
+                marker.showInfoWindow();
+                Toast.makeText(this, "你点击了：" + marker.getTitle(), Toast.LENGTH_SHORT).show();
+                chek = true;
+        }else{
+            marker.hideInfoWindow();
+            Toast.makeText(this, "隐藏", Toast.LENGTH_SHORT).show();
+            chek = false;
+        }
+    }
+    /**
+     * 监听amap地图加载成功事件回调
+     */
+    @Override
+    public void onMapLoaded() {
+        // 设置所有maker显示在当前可视区域地图中
+//        LatLngBounds bounds = new LatLngBounds.Builder()
+//                .include(XIAN).include(CHENGDU)
+//                .include(latlng).include(ZHENGZHOU).include(BEIJING).build();
+//        aMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 10));
+    }
+
+    /**
+     * 对marker标注点点击响应事件
+     */
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        return false;
+    }
+    /**
+     * 监听开始拖动marker事件回调
+     */
+    @Override
+    public void onMarkerDragStart(Marker marker) {
+    }
+
+    /**
+     * 监听拖动marker时事件回调
+     */
+    @Override
+    public void onMarkerDrag(Marker marker) {
+
+    }
+    /**
+     * 监听拖动marker结束事件回调
+     */
+    @Override
+    public void onMarkerDragEnd(Marker marker) {
+        Toast.makeText(this, marker.getTitle() + "拖动位置："
+                + marker.getPosition().latitude + ","
+                + marker.getPosition().longitude, Toast.LENGTH_SHORT).show();
+
     }
 
 
@@ -273,106 +352,5 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
             mLocationClient.onDestroy();
         }
         mLocationClient = null;
-    }
-
-    @Override
-    public View getInfoWindow(Marker marker) {
-        return null;
-    }
-    /**
-     * 监听自定义infowindow窗口的infocontents事件回调
-     */
-    @Override
-    public View getInfoContents(Marker marker) {
-        return null;
-    }
-
-    /**
-     * 监听点击infowindow窗口事件回调
-     */
-    @Override
-    public void onInfoWindowClick(Marker marker) {
-        Toast.makeText(this, "你点击了：" + marker.getTitle(), Toast.LENGTH_SHORT).show();
-    }
-    /**
-     * 监听amap地图加载成功事件回调
-     */
-    @Override
-    public void onMapLoaded() {
-// 设置所有maker显示在当前可视区域地图中
-        LatLngBounds bounds = new LatLngBounds.Builder()
-                .include(XIAN).include(CHENGDU)
-                .include(latlng).include(ZHENGZHOU).include(BEIJING).build();
-        aMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 10));
-    }
-
-    /**
-     * 对marker标注点点击响应事件
-     */
-    @Override
-    public boolean onMarkerClick(Marker marker) {
-        if (marker.equals(marker2)) {
-            if (aMap != null) {
-                jumpPoint(marker);
-            }
-        }
-        return false;
-    }
-    /**
-     * 监听开始拖动marker事件回调
-     */
-    @Override
-    public void onMarkerDragStart(Marker marker) {
-        Toast.makeText(this, "开始拖动", Toast.LENGTH_SHORT).show();
-    }
-
-    /**
-     * 监听拖动marker时事件回调
-     */
-    @Override
-    public void onMarkerDrag(Marker marker) {
-        Toast.makeText(this, marker.getTitle() + "拖动位置："
-                + marker.getPosition().latitude + ","
-                + marker.getPosition().longitude, Toast.LENGTH_SHORT).show();
-    }
-    /**
-     * 监听拖动marker结束事件回调
-     */
-    @Override
-    public void onMarkerDragEnd(Marker marker) {
-        Toast.makeText(this, "停止拖动", Toast.LENGTH_SHORT).show();
-    }
-
-    /**
-     * marker点击时跳动一下
-     */
-    public void jumpPoint(final Marker marker) {
-        final Handler handler = new Handler();
-        final long start = SystemClock.uptimeMillis();
-        Projection proj = aMap.getProjection();
-        Point startPoint = proj.toScreenLocation(XIAN);
-        startPoint.offset(0, -100);
-        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
-        final long duration = 1500;
-
-        final Interpolator interpolator = new BounceInterpolator();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                long elapsed = SystemClock.uptimeMillis() - start;
-                float t = interpolator.getInterpolation((float) elapsed
-                        / duration);
-                double lng = t * XIAN.longitude + (1 - t)
-                        * startLatLng.longitude;
-                double lat = t * XIAN.latitude + (1 - t)
-                        * startLatLng.latitude;
-                marker.setPosition(new LatLng(lat, lng));
-                aMap.invalidate();// 刷新地图
-                if (t < 1.0) {
-                    handler.postDelayed(this, 16);
-                }
-            }
-        });
-
     }
 }
